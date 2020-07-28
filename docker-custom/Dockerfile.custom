@@ -31,16 +31,26 @@ RUN set -ex && \
 WORKDIR /usr/src/node-red
 
 # package.json contains Node-RED NPM module and node dependencies
-COPY package.json .
+# COPY package.json .
+
+# RUN git clone https://github.com/Red-Alpha/node-red.git .
+COPY /node-red .
+
+RUN npm install --unsafe-perm --no-update-notifier --no-fund && \
+    npm run build && \
+    cp -R ./packages/node_modules/* node_modules && \
+    # /tmp/remove_native_gpio.sh && \
+    cp -R node_modules prod_node_modules
 
 #### Stage BUILD #######################################################################################################
 FROM base AS build
 
 # Install Build tools
-RUN apk add --no-cache --virtual buildtools build-base linux-headers udev python && \
-    npm install --unsafe-perm --no-update-notifier --no-fund --only=production && \
-    /tmp/remove_native_gpio.sh && \
-    cp -R node_modules prod_node_modules
+# RUN apk add --no-cache --virtual buildtools build-base linux-headers udev python && \
+#     npm install --unsafe-perm --no-update-notifier --no-fund && \
+#     cp -R node-red-repo/packages/node_modules/* node_modules && \
+#     /tmp/remove_native_gpio.sh && \
+#     cp -R node_modules prod_node_modules
 
 #### Stage RELEASE #####################################################################################################
 FROM base AS RELEASE
@@ -68,7 +78,7 @@ COPY --from=build /usr/src/node-red/prod_node_modules ./node_modules
 
 # Chown, install devtools & Clean up
 RUN chown -R node-red:root /usr/src/node-red && \
-    /tmp/install_devtools.sh && \
+    # /tmp/install_devtools.sh && \
     rm -r /tmp/*
 
 USER node-red
